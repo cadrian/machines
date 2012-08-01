@@ -79,5 +79,8 @@ int main() {
      root->trigger(root);
      assert(root->current(root) == NULL);
 
+     root->trigger(root);
+     assert(root->current(root) == a);
+
      return 0;
 }
