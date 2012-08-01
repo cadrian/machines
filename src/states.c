@@ -127,20 +127,22 @@ static void trigger(machine_state_impl_t *this) {
      }
      else {
           transition = this->current->transition;
-          bool_t done = false;
-          while (transition && !done) {
-               done = transition->transition((machine_state_t*)this->current, (machine_state_t*)transition->target, transition->payload);
-               if (done) {
-                    run_observers((machine_state_t*)this->current, this->current->on_exit);
-                    this->current = transition->target;
-               }
-               else {
-                    transition = (machine_state_transition_t*)transition->chain.next;
-               }
-          }
-          if (!done) {
+          if (!transition) {
                run_observers((machine_state_t*)this->current, this->current->on_exit);
                this->current = NULL;
+          }
+          else {
+               bool_t done = false;
+               do {
+                    done = transition->transition((machine_state_t*)this->current, (machine_state_t*)transition->target, transition->payload);
+                    if (done) {
+                         run_observers((machine_state_t*)this->current, this->current->on_exit);
+                         this->current = transition->target;
+                    }
+                    else {
+                         transition = (machine_state_transition_t*)transition->chain.next;
+                    }
+               } while (transition && !done);
           }
      }
 
