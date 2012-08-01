@@ -143,9 +143,7 @@ static void trigger(machine_state_impl_t *this) {
 
      if (this->current) {
           run_observers((machine_state_t*)this->current, this->current->on_entry);
-     }
-     else if (this->parent) { // should always be true: && this->parent->current == this) {
-          trigger(this->parent);
+          trigger(this->current);
      }
 }
 
