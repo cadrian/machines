@@ -117,15 +117,7 @@ static void add_transition(machine_state_impl_t *this, machine_state_transition_
 static void trigger(machine_state_impl_t *this) {
      machine_state_transition_t *transition;
 
-     if (!this->current) {
-          if (this->start) {
-               this->current = this->start;
-          }
-          else if (this->parent) { // should always be true: && this->parent->current == this) {
-               trigger(this->parent);
-          }
-     }
-     else {
+     if (this->current) {
           transition = this->current->transition;
           if (!transition) {
                run_observers((machine_state_t*)this->current, this->current->on_exit);
@@ -145,9 +137,15 @@ static void trigger(machine_state_impl_t *this) {
                } while (transition && !done);
           }
      }
+     else if (this->start) {
+          this->current = this->start;
+     }
 
      if (this->current) {
           run_observers((machine_state_t*)this->current, this->current->on_entry);
+     }
+     else if (this->parent) { // should always be true: && this->parent->current == this) {
+          trigger(this->parent);
      }
 }
 
