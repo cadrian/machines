@@ -27,9 +27,4 @@
 #define __PUBLIC__ __attribute__((__visibility__("default")))
 #define __PRINTF__ __attribute__((format(printf, 2, 3)))
 
-typedef enum {
-     false = 0,
-     true
-} bool_t;
-
 #endif /* _MACHINES_SHARED_H_ */

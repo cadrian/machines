@@ -29,7 +29,7 @@ typedef struct machine_visitor machine_visitor_t;
 
 typedef void (*machine_state_on_entry_fn)(machine_state_t *state, void *payload);
 typedef void (*machine_state_on_exit_fn)(machine_state_t *state, void *payload);
-typedef bool_t (*machine_state_transition_fn)(machine_state_t *from_state, machine_state_t *to_state, void *payload);
+typedef int (*machine_state_transition_fn)(machine_state_t *from_state, machine_state_t *to_state, void *payload);
 
 typedef machine_state_t*(*machine_state_current_fn)(machine_state_t *this);
 typedef void*(*machine_state_payload_fn)(machine_state_t *this);

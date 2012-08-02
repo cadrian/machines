@@ -83,7 +83,7 @@ int main() {
      assert(root->current(root) == menu);
 
      // the menu is displayed; the user chooses the first level
-     condition_level_1->value = true;
+     condition_level_1->value = 1;
      printf("**** trigger: go to first level\n");
      root->trigger(root);
      assert(root->current(root) == level_1);
@@ -96,7 +96,7 @@ int main() {
      assert(level_1->current(level_1) == level_1_play);
 
      // the user reaches the end of the level
-     condition_quit->value = true;
+     condition_quit->value = 1;
      printf("**** trigger: exit level\n");
      root->trigger(root);
      assert(root->current(root) == level_1);
@@ -108,11 +108,11 @@ int main() {
      assert(root->current(root) == menu);
 
      // (a bit of internal cleanup)
-     condition_level_1->value = false;
-     condition_quit->value = false;
+     condition_level_1->value = 0;
+     condition_quit->value = 0;
 
      // the menu is displayed; the user chooses the second level
-     condition_level_2->value = true;
+     condition_level_2->value = 1;
      printf("**** trigger: go to second level\n");
      root->trigger(root);
      assert(root->current(root) == level_2);
@@ -137,7 +137,7 @@ int main() {
      assert(level_2->current(level_2) == level_2_play);
 
      // the user reaches the end of the level
-     condition_quit->value = true;
+     condition_quit->value = 1;
      printf("**** trigger: exit level\n");
      root->trigger(root);
      assert(root->current(root) == level_2);

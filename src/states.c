@@ -136,7 +136,7 @@ static void trigger(machine_state_impl_t *this) {
                     this->current = NULL;
                }
                else {
-                    bool_t done = false;
+                    int done;
                     do {
                          done = transition->transition((machine_state_t*)old, (machine_state_t*)transition->target, transition->payload);
                          if (done) {

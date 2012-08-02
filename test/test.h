@@ -44,11 +44,11 @@ static void print_exit_(machine_state_t *state) {
 }
 static machine_state_on_exit_fn print_exit = (machine_state_on_exit_fn)print_exit_;
 
-static bool_t always_true_(machine_state_t *from_state, machine_state_t *to_state, char *transition) {
+static int always_true_(machine_state_t *from_state, machine_state_t *to_state, char *transition) {
      char *from_name = from_state ? (char*)from_state->payload(from_state) : "<nil>";
      char *to_name = to_state ? (char*)to_state->payload(to_state) : "<nil>";
      printf("[%s] from %s to %s\n", transition, from_name, to_name);
-     return true;
+     return 1;
 }
 static machine_state_transition_fn always_true = (machine_state_transition_fn)always_true_;
 
@@ -57,14 +57,13 @@ typedef struct {
      int count;
 } counter_t;
 
-static bool_t countdown_(machine_state_t *from_state, machine_state_t *to_state, counter_t *counter) {
-     bool_t result = false;
+static int countdown_(machine_state_t *from_state, machine_state_t *to_state, counter_t *counter) {
+     int result = 0;
      char *from_name = from_state ? (char*)from_state->payload(from_state) : "<nil>";
      char *to_name = to_state ? (char*)to_state->payload(to_state) : "<nil>";
      printf("[%s] from %s to %s (%d)\n", counter->name, from_name, to_name, counter->count);
      if (counter->count) {
-          counter->count--;
-          result = true;
+          result = counter->count--;
      }
      return result;
 }
@@ -79,10 +78,10 @@ static counter_t* counter(char *name, int initial) {
 
 typedef struct {
      char *name;
-     bool_t value;
+     int value;
 } condition_t;
 
-static bool_t iff_(machine_state_t *from_state, machine_state_t *to_state, condition_t *condition) {
+static int iff_(machine_state_t *from_state, machine_state_t *to_state, condition_t *condition) {
      return condition->value;
 }
 static machine_state_transition_fn iff = (machine_state_transition_fn)iff_;
@@ -90,6 +89,6 @@ static machine_state_transition_fn iff = (machine_state_transition_fn)iff_;
 static condition_t *condition(char *name) {
      condition_t *result = (condition_t*)malloc(sizeof(condition_t));
      result->name = name;
-     result->value = false;
+     result->value = 0;
      return result;
 }
