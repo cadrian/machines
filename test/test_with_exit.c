@@ -21,14 +21,16 @@
  *
  * [a] is the [root] entry state.
  *
- * [root] does not have any exit state; an implicit exit state is [c]
- * because it has no transitions.
+ * [c] is the [root] exit state, meaning that if there is no
+ * transition taken from that state then the sub-machine will exit.
  *
  *  -[root]---------------------------
  * |                                  |
  * |   -[a]-       -[b]-       -[c]-  |
  * |  |     | --> |     | --> |     | |
  * |   -----       -----       -----  |
+ * |     ^                       |    |
+ * |     `-----------------------'    |
  * |                                  |
  *  ----------------------------------
  */
@@ -38,6 +40,7 @@ int main() {
      machine_state_t *a;
      machine_state_t *b;
      machine_state_t *c;
+     counter_t *countdown_c_a = counter("c->a", 1);
 
      root = machines_new_state("root", NULL);
      a = machines_new_state("a", root);
@@ -45,9 +48,11 @@ int main() {
      c = machines_new_state("c", root);
 
      root->entry_at(root, a);
+     root->exit_at(root, c);
 
      a->add_transition(a, b, always_true, "a->b");
      b->add_transition(b, c, always_true, "b->c");
+     c->add_transition(c, a, countdown, countdown_c_a);
 
      root->add_entry(root, print_entry, NULL);
      a->add_entry(a, print_entry, NULL);
@@ -59,7 +64,21 @@ int main() {
      b->add_exit(b, print_exit, NULL);
      c->add_exit(c, print_exit, NULL);
 
+     assert(countdown_c_a->count == 1);
+
      root->trigger(root);
+     assert(root->current(root) == a);
+
+     root->trigger(root);
+     assert(root->current(root) == b);
+
+     root->trigger(root);
+     assert(root->current(root) == c);
+
+     assert(countdown_c_a->count == 1);
+
+     root->trigger(root);
+     assert(countdown_c_a->count == 0);
      assert(root->current(root) == a);
 
      root->trigger(root);
@@ -70,9 +89,6 @@ int main() {
 
      root->trigger(root);
      assert(root->current(root) == NULL);
-
-     root->trigger(root);
-     assert(root->current(root) == a);
 
      return 0;
 }

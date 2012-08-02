@@ -21,14 +21,16 @@
  *
  * [a] is the [root] entry state.
  *
- * [root] does not have any exit state; an implicit exit state is [c]
- * because it has no transitions.
+ * [root] does not have any exit state so there is no way to quit the
+ * sub-machine.
  *
  *  -[root]---------------------------
  * |                                  |
  * |   -[a]-       -[b]-       -[c]-  |
  * |  |     | --> |     | --> |     | |
  * |   -----       -----       -----  |
+ * |     ^                       |    |
+ * |     `-----------------------'    |
  * |                                  |
  *  ----------------------------------
  */
@@ -48,6 +50,7 @@ int main() {
 
      a->add_transition(a, b, always_true, "a->b");
      b->add_transition(b, c, always_true, "b->c");
+     c->add_transition(c, a, always_true, "c->a");
 
      root->add_entry(root, print_entry, NULL);
      a->add_entry(a, print_entry, NULL);
@@ -67,9 +70,6 @@ int main() {
 
      root->trigger(root);
      assert(root->current(root) == c);
-
-     root->trigger(root);
-     assert(root->current(root) == NULL);
 
      root->trigger(root);
      assert(root->current(root) == a);

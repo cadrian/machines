@@ -28,7 +28,8 @@ struct machine_state_impl {
      void *payload;
 
      machine_state_impl_t *parent ;
-     machine_state_impl_t *start  ;
+     machine_state_impl_t *entry  ;
+     machine_state_impl_t *exit   ;
      machine_state_impl_t *current;
 
      machine_state_observer_t *on_entry;
@@ -99,11 +100,11 @@ static void add_entry(machine_state_impl_t *this, machine_state_on_entry_fn fn, 
      this->on_entry = add_observer(this->on_entry, (machine_observer_run_fn)fn, payload);
 }
 
-static void add_exit(machine_state_impl_t *this, machine_state_on_entry_fn fn, void *payload) {
+static void add_exit(machine_state_impl_t *this, machine_state_on_exit_fn fn, void *payload) {
      this->on_exit = add_observer(this->on_exit, (machine_observer_run_fn)fn, payload);
 }
 
-static void add_transition(machine_state_impl_t *this, machine_state_transition_fn fn, machine_state_t *target, void *payload) {
+static void add_transition(machine_state_impl_t *this, machine_state_t *target, machine_state_transition_fn fn, void *payload) {
      machine_state_transition_t *new;
 
      new = (machine_state_transition_t*)malloc(sizeof(machine_state_transition_t));
@@ -114,34 +115,56 @@ static void add_transition(machine_state_impl_t *this, machine_state_transition_
      this->transition = (machine_state_transition_t*)add_chain((machine_chain_t*)this->transition, (machine_chain_t*)new);
 }
 
+static void entry_at(machine_state_impl_t *this, machine_state_impl_t *child) {
+     this->entry = child;
+}
+
+static void exit_at(machine_state_impl_t *this, machine_state_impl_t *child) {
+     this->exit = child;
+}
+
 static void trigger(machine_state_impl_t *this) {
      machine_state_transition_t *transition;
+     machine_state_impl_t *old = this->current;
 
-     if (this->current) {
-          transition = this->current->transition;
-          if (!transition) {
-               run_observers((machine_state_t*)this->current, this->current->on_exit);
-               this->current = NULL;
-          }
-          else {
-               bool_t done = false;
-               do {
-                    done = transition->transition((machine_state_t*)this->current, (machine_state_t*)transition->target, transition->payload);
-                    if (done) {
-                         run_observers((machine_state_t*)this->current, this->current->on_exit);
-                         this->current = transition->target;
+     if (old) {
+          trigger(old);
+          if (old->current == NULL) {
+               transition = old->transition;
+               if (!transition) {
+                    run_observers((machine_state_t*)old, old->on_exit);
+                    this->current = NULL;
+               }
+               else {
+                    bool_t done = false;
+                    do {
+                         done = transition->transition((machine_state_t*)old, (machine_state_t*)transition->target, transition->payload);
+                         if (done) {
+                              if (transition->target != old) {
+                                   run_observers((machine_state_t*)this->current, this->current->on_exit);
+                              }
+                              this->current = transition->target;
+                         }
+                         else {
+                              transition = (machine_state_transition_t*)transition->chain.next;
+                         }
+                    } while (transition && !done);
+
+                    if (!done && old == this->exit) {
+                         run_observers((machine_state_t*)old, old->on_exit);
+                         this->current = NULL;
+                         if (this->parent) {
+                              trigger(this->parent);
+                         }
                     }
-                    else {
-                         transition = (machine_state_transition_t*)transition->chain.next;
-                    }
-               } while (transition && !done);
+               }
           }
      }
-     else if (this->start) {
-          this->current = this->start;
+     else {
+          this->current = this->entry;
      }
 
-     if (this->current) {
+     if (this->current && this->current != old) {
           run_observers((machine_state_t*)this->current, this->current->on_entry);
           trigger(this->current);
      }
@@ -153,16 +176,17 @@ static machine_state_t fn = {
      (machine_state_add_entry_fn     )add_entry     ,
      (machine_state_add_exit_fn      )add_exit      ,
      (machine_state_add_transition_fn)add_transition,
+     (machine_state_entry_at_fn      )entry_at      ,
+     (machine_state_exit_at_fn       )exit_at       ,
      (machine_state_trigger_fn       )trigger       ,
 };
 
-__PUBLIC__ machine_state_t *machines_new_state(void *payload, machine_state_t *parent, machine_state_t *child_startup) {
+__PUBLIC__ machine_state_t *machines_new_state(void *payload, machine_state_t *parent) {
      machine_state_impl_t *result = (machine_state_impl_t*)malloc(sizeof(machine_state_impl_t));
      machine_state_impl_t *parent_impl = (machine_state_impl_t*)parent;
      result->fn = fn;
      result->payload = payload;
      result->parent = (machine_state_impl_t*)parent;
-     result->start = (machine_state_impl_t*)child_startup;
      result->current = NULL;
      result->on_entry = NULL;
      result->on_exit = NULL;

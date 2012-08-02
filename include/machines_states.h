@@ -35,7 +35,9 @@ typedef machine_state_t*(*machine_state_current_fn)(machine_state_t *this);
 typedef void*(*machine_state_payload_fn)(machine_state_t *this);
 typedef void (*machine_state_add_entry_fn)(machine_state_t *this, machine_state_on_entry_fn fn, void *payload);
 typedef void (*machine_state_add_exit_fn)(machine_state_t *this, machine_state_on_exit_fn fn, void *payload);
-typedef void (*machine_state_add_transition_fn)(machine_state_t *this, machine_state_transition_fn fn, machine_state_t *target, void *payload);
+typedef void (*machine_state_add_transition_fn)(machine_state_t *this, machine_state_t *target, machine_state_transition_fn fn, void *payload);
+typedef void (*machine_state_entry_at_fn)(machine_state_t *this, machine_state_t *child);
+typedef void (*machine_state_exit_at_fn)(machine_state_t *this, machine_state_t *child);
 typedef void (*machine_state_trigger_fn)(machine_state_t *this);
 
 struct machine_state {
@@ -44,9 +46,11 @@ struct machine_state {
      machine_state_add_entry_fn      add_entry     ;
      machine_state_add_exit_fn       add_exit      ;
      machine_state_add_transition_fn add_transition;
+     machine_state_entry_at_fn       entry_at      ;
+     machine_state_exit_at_fn        exit_at       ;
      machine_state_trigger_fn        trigger       ;
 };
 
-__PUBLIC__ machine_state_t *machines_new_state(void *payload, machine_state_t *parent, machine_state_t *child_startup);
+__PUBLIC__ machine_state_t *machines_new_state(void *payload, machine_state_t *parent);
 
 #endif /* _MACHINES_STATES_H_ */
