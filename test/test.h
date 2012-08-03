@@ -32,63 +32,74 @@ static void assert_(int test, const char *message, int line, const char *file) {
 
 #define assert(t) assert_((t), #t, __LINE__, __FILE__)
 
-static void print_entry_(machine_state_t *state) {
+static void print_entry_(machines_state_t *state) {
      char *state_name = state ? (char*)state->payload(state) : "<nil>";
      printf("enter %s\n", state_name);
 }
-static machine_state_on_entry_fn print_entry = (machine_state_on_entry_fn)print_entry_;
+static machines_state_observer_t print_entry() {
+     machines_state_observer_t result = { (machines_state_observer_fn)print_entry_, NULL };
+     return result;
+}
 
-static void print_exit_(machine_state_t *state) {
+static void print_exit_(machines_state_t *state) {
      char *state_name = state ? (char*)state->payload(state) : "<nil>";
      printf("exit %s\n", state_name);
 }
-static machine_state_on_exit_fn print_exit = (machine_state_on_exit_fn)print_exit_;
+static machines_state_observer_t print_exit() {
+     machines_state_observer_t result = { (machines_state_observer_fn)print_exit_, NULL };
+     return result;
+}
 
-static int always_true_(machine_state_t *from_state, machine_state_t *to_state, char *transition) {
+static int always_true_(machines_state_t *from_state, machines_state_t *to_state, char *transition) {
      char *from_name = from_state ? (char*)from_state->payload(from_state) : "<nil>";
      char *to_name = to_state ? (char*)to_state->payload(to_state) : "<nil>";
      printf("[%s] from %s to %s\n", transition, from_name, to_name);
      return 1;
 }
-static machine_state_transition_fn always_true = (machine_state_transition_fn)always_true_;
+static machines_state_transition_t always_true(char *tag) {
+     machines_state_transition_t result = { (machines_state_transition_fn)always_true_, tag };
+     return result;
+}
 
 typedef struct {
-     char *name;
-     int count;
+     char *tag;
+     int *count;
 } counter_t;
 
-static int countdown_(machine_state_t *from_state, machine_state_t *to_state, counter_t *counter) {
-     int result = 0;
+static int countdown_(machines_state_t *from_state, machines_state_t *to_state, counter_t *counter) {
+     int result = *(counter->count);
      char *from_name = from_state ? (char*)from_state->payload(from_state) : "<nil>";
      char *to_name = to_state ? (char*)to_state->payload(to_state) : "<nil>";
-     printf("[%s] from %s to %s (%d)\n", counter->name, from_name, to_name, counter->count);
-     if (counter->count) {
-          result = counter->count--;
+     printf("[%s] from %s to %s (%d)\n", counter->tag, from_name, to_name, result);
+     if (result) {
+          *(counter->count) = result - 1;
      }
      return result;
 }
-static machine_state_transition_fn countdown = (machine_state_transition_fn)countdown_;
-
-static counter_t* counter(char *name, int initial) {
-     counter_t *result = (counter_t*)malloc(sizeof(counter_t));
-     result->name = name;
-     result->count = initial;
+static machines_state_transition_t countdown(char *tag, int *count) {
+     counter_t *counter = (counter_t*)malloc(sizeof(counter_t));
+     machines_state_transition_t result = { (machines_state_transition_fn)countdown_, counter };
+     counter->tag = tag;
+     counter->count = count;
      return result;
 }
 
 typedef struct {
-     char *name;
-     int value;
+     char *tag;
+     int *value;
 } condition_t;
 
-static int iff_(machine_state_t *from_state, machine_state_t *to_state, condition_t *condition) {
-     return condition->value;
+static int iff_(machines_state_t *from_state, machines_state_t *to_state, condition_t *condition) {
+     int result = *(condition->value);
+     char *from_name = from_state ? (char*)from_state->payload(from_state) : "<nil>";
+     char *to_name = to_state ? (char*)to_state->payload(to_state) : "<nil>";
+     printf("[%s] from %s to %s (%d)\n", condition->tag, from_name, to_name, result);
+     return result;
 }
-static machine_state_transition_fn iff = (machine_state_transition_fn)iff_;
-
-static condition_t *condition(char *name) {
-     condition_t *result = (condition_t*)malloc(sizeof(condition_t));
-     result->name = name;
-     result->value = 0;
+static machines_state_transition_t iff(char *tag, int *value) {
+     condition_t *cond = (condition_t*)malloc(sizeof(condition_t));
+     machines_state_transition_t result = { (machines_state_transition_fn)iff_, cond };
+     cond->tag = tag;
+     cond->value = value;
      return result;
 }

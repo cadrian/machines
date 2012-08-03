@@ -19,61 +19,59 @@
 
 #include "machines_states.h"
 
-typedef struct machine_state_impl machine_state_impl_t;
-typedef struct machine_state_observer machine_state_observer_t;
-typedef struct machine_state_transition machine_state_transition_t;
+typedef struct machines_state_impl machines_state_impl_t;
 
-struct machine_state_impl {
-     machine_state_t fn;
+typedef struct machines_chain machines_chain_t;
+struct machines_chain {
+     machines_chain_t *next;
+};
+
+typedef struct machines_state_chain_observer machines_state_chain_observer_t;
+typedef struct machines_state_chain_transition machines_state_chain_transition_t;
+
+struct machines_state_impl {
+     machines_state_t fn;
      void *payload;
 
-     machine_state_impl_t *parent ;
-     machine_state_impl_t *entry  ;
-     machine_state_impl_t *exit   ;
-     machine_state_impl_t *current;
+     machines_state_impl_t *parent ;
+     machines_state_impl_t *entry  ;
+     machines_state_impl_t *exit   ;
+     machines_state_impl_t *current;
 
-     machine_state_observer_t *on_entry;
-     machine_state_observer_t *on_exit;
+     machines_state_chain_observer_t *on_entry;
+     machines_state_chain_observer_t *on_exit;
 
-     machine_state_transition_t *transition;
+     machines_state_chain_transition_t *transition;
 };
 
-typedef struct machine_chain machine_chain_t;
-struct machine_chain {
-     machine_chain_t *next;
+struct machines_state_chain_observer {
+     machines_chain_t chain;
+     machines_state_observer_t agent;
 };
 
-typedef void (*machine_observer_run_fn)(machine_state_t *state, void *payload);
-struct machine_state_observer {
-     machine_chain_t chain;
-     machine_observer_run_fn run;
-     void *payload;
+struct machines_state_chain_transition {
+     machines_chain_t chain;
+     machines_state_impl_t *target;
+     machines_state_transition_t agent;
 };
 
-struct machine_state_transition {
-     machine_chain_t chain;
-     machine_state_transition_fn transition;
-     machine_state_impl_t *target;
-     void *payload;
-};
-
-static void run_observers(machine_state_t *state, machine_state_observer_t *observer) {
+static void run_observers(machines_state_t *state, machines_state_chain_observer_t *observer) {
      while (observer) {
-          observer->run(state, observer->payload);
-          observer = (machine_state_observer_t*)observer->chain.next;
+          observer->agent.fn(state, observer->agent.payload);
+          observer = (machines_state_chain_observer_t*)observer->chain.next;
      }
 }
 
-static machine_state_t *current(machine_state_impl_t *this) {
-     return (machine_state_t*)this->current;
+static machines_state_t *current(machines_state_impl_t *this) {
+     return (machines_state_t*)this->current;
 }
 
-static void* payload(machine_state_impl_t *this) {
+static void* payload(machines_state_impl_t *this) {
      return this->payload;
 }
 
-static machine_chain_t *add_chain(machine_chain_t *chain, machine_chain_t *new) {
-     machine_chain_t *result;
+static machines_chain_t *add_chain(machines_chain_t *chain, machines_chain_t *new) {
+     machines_chain_t *result;
      if (chain) {
           result = chain;
           while (chain->next) {
@@ -88,70 +86,65 @@ static machine_chain_t *add_chain(machine_chain_t *chain, machine_chain_t *new) 
      return result;
 }
 
-static machine_state_observer_t *add_observer(machine_state_observer_t *observer, machine_observer_run_fn fn, void *payload) {
-     machine_state_observer_t *new = (machine_state_observer_t*)malloc(sizeof(machine_state_observer_t));
-     new->run = fn;
-     new->payload = payload;
-
-     return (machine_state_observer_t*)add_chain(&(observer->chain), &(new->chain));
+static machines_state_chain_observer_t *add_observer(machines_state_chain_observer_t *observer, machines_state_observer_t agent) {
+     machines_state_chain_observer_t *new = (machines_state_chain_observer_t*)malloc(sizeof(machines_state_chain_observer_t));
+     new->agent = agent;
+     return (machines_state_chain_observer_t*)add_chain(&(observer->chain), &(new->chain));
 }
 
-static void add_entry(machine_state_impl_t *this, machine_state_on_entry_fn fn, void *payload) {
-     this->on_entry = add_observer(this->on_entry, (machine_observer_run_fn)fn, payload);
+static void add_entry(machines_state_impl_t *this, machines_state_observer_t entry) {
+     this->on_entry = add_observer(this->on_entry, entry);
 }
 
-static void add_exit(machine_state_impl_t *this, machine_state_on_exit_fn fn, void *payload) {
-     this->on_exit = add_observer(this->on_exit, (machine_observer_run_fn)fn, payload);
+static void add_exit(machines_state_impl_t *this, machines_state_observer_t exit) {
+     this->on_exit = add_observer(this->on_exit, exit);
 }
 
-static void add_transition(machine_state_impl_t *this, machine_state_t *target, machine_state_transition_fn fn, void *payload) {
-     machine_state_transition_t *new;
-
-     new = (machine_state_transition_t*)malloc(sizeof(machine_state_transition_t));
-     new->transition = fn;
-     new->target = (machine_state_impl_t*)target;
-     new->payload = payload;
-
-     this->transition = (machine_state_transition_t*)add_chain((machine_chain_t*)this->transition, (machine_chain_t*)new);
+static void add_transition(machines_state_impl_t *this, machines_state_t *target, machines_state_transition_t agent) {
+     machines_state_chain_transition_t *new;
+     new = (machines_state_chain_transition_t*)malloc(sizeof(machines_state_chain_transition_t));
+     new->agent = agent;
+     new->target = (machines_state_impl_t*)target;
+     this->transition = (machines_state_chain_transition_t*)add_chain((machines_chain_t*)this->transition, (machines_chain_t*)new);
 }
 
-static void entry_at(machine_state_impl_t *this, machine_state_impl_t *child) {
+static void entry_at(machines_state_impl_t *this, machines_state_impl_t *child) {
      this->entry = child;
 }
 
-static void exit_at(machine_state_impl_t *this, machine_state_impl_t *child) {
+static void exit_at(machines_state_impl_t *this, machines_state_impl_t *child) {
      this->exit = child;
 }
 
-static void trigger(machine_state_impl_t *this) {
-     machine_state_transition_t *transition;
-     machine_state_impl_t *old = this->current;
+static void trigger(machines_state_impl_t *this) {
+     machines_state_chain_transition_t *transition;
+     machines_state_impl_t *old = this->current;
 
      if (old) {
           trigger(old);
           if (old->current == NULL) {
                transition = old->transition;
                if (!transition) {
-                    run_observers((machine_state_t*)old, old->on_exit);
+                    run_observers((machines_state_t*)old, old->on_exit);
                     this->current = NULL;
                }
                else {
                     int done;
                     do {
-                         done = transition->transition((machine_state_t*)old, (machine_state_t*)transition->target, transition->payload);
+                         done = transition->agent.fn((machines_state_t*)old, (machines_state_t*)transition->target, transition->agent.payload);
                          if (done) {
                               if (transition->target != old) {
-                                   run_observers((machine_state_t*)this->current, this->current->on_exit);
+                                   run_observers((machines_state_t*)this->current, this->current->on_exit);
                               }
                               this->current = transition->target;
                          }
                          else {
-                              transition = (machine_state_transition_t*)transition->chain.next;
+                              transition = (machines_state_chain_transition_t*)transition->chain.next;
                          }
                     } while (transition && !done);
 
                     if (!done && old == this->exit) {
-                         run_observers((machine_state_t*)old, old->on_exit);
+                         run_observers((machines_state_t*)old, old->on_exit);
                          this->current = NULL;
                          if (this->parent) {
                               trigger(this->parent);
@@ -165,32 +158,42 @@ static void trigger(machine_state_impl_t *this) {
      }
 
      if (this->current && this->current != old) {
-          run_observers((machine_state_t*)this->current, this->current->on_entry);
+          run_observers((machines_state_t*)this->current, this->current->on_entry);
           trigger(this->current);
      }
 }
 
-static machine_state_t fn = {
-     (machine_state_current_fn       )current       ,
-     (machine_state_payload_fn       )payload       ,
-     (machine_state_add_entry_fn     )add_entry     ,
-     (machine_state_add_exit_fn      )add_exit      ,
-     (machine_state_add_transition_fn)add_transition,
-     (machine_state_entry_at_fn      )entry_at      ,
-     (machine_state_exit_at_fn       )exit_at       ,
-     (machine_state_trigger_fn       )trigger       ,
+static machines_state_t fn = {
+     (machines_state_current_fn       )current       ,
+     (machines_state_payload_fn       )payload       ,
+     (machines_state_add_entry_fn     )add_entry     ,
+     (machines_state_add_exit_fn      )add_exit      ,
+     (machines_state_add_transition_fn)add_transition,
+     (machines_state_entry_at_fn      )entry_at      ,
+     (machines_state_exit_at_fn       )exit_at       ,
+     (machines_state_trigger_fn       )trigger       ,
 };
 
-__PUBLIC__ machine_state_t *machines_new_state(void *payload, machine_state_t *parent) {
-     machine_state_impl_t *result = (machine_state_impl_t*)malloc(sizeof(machine_state_impl_t));
-     machine_state_impl_t *parent_impl = (machine_state_impl_t*)parent;
+__PUBLIC__ machines_state_t *machines_new_state(void *payload, machines_state_t *parent) {
+     machines_state_impl_t *result = (machines_state_impl_t*)malloc(sizeof(machines_state_impl_t));
+     machines_state_impl_t *parent_impl = (machines_state_impl_t*)parent;
      result->fn = fn;
      result->payload = payload;
-     result->parent = (machine_state_impl_t*)parent;
+     result->parent = (machines_state_impl_t*)parent;
      result->current = NULL;
      result->on_entry = NULL;
      result->on_exit = NULL;
      result->transition = NULL;
 
      return &(result->fn);
+}
+
+__PUBLIC__ machines_state_observer_t machines_observer(machines_state_observer_fn fn, void *payload) {
+     machines_state_observer_t result = { fn, payload };
+     return result;
+}
+
+__PUBLIC__ machines_state_transition_t machines_transition(machines_state_transition_fn fn, void *payload) {
+     machines_state_transition_t result = { fn, payload };
+     return result;
 }

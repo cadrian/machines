@@ -34,30 +34,30 @@
  */
 
 int main() {
-     machine_state_t *root;
-     machine_state_t *a;
-     machine_state_t *b;
-     machine_state_t *c;
+     machines_state_t *root;
+     machines_state_t *a;
+     machines_state_t *b;
+     machines_state_t *c;
 
      root = machines_new_state("root", NULL);
-     a = machines_new_state("a", root);
-     b = machines_new_state("b", root);
-     c = machines_new_state("c", root);
+     a    = machines_new_state("a"   , root);
+     b    = machines_new_state("b"   , root);
+     c    = machines_new_state("c"   , root);
 
      root->entry_at(root, a);
 
-     a->add_transition(a, b, always_true, "a->b");
-     b->add_transition(b, c, always_true, "b->c");
+     a->add_transition(a, b, always_true("a->b"));
+     b->add_transition(b, c, always_true("b->c"));
 
-     root->add_entry(root, print_entry, NULL);
-     a->add_entry(a, print_entry, NULL);
-     b->add_entry(b, print_entry, NULL);
-     c->add_entry(c, print_entry, NULL);
+     root->add_entry(root, print_entry());
+     a   ->add_entry(a   , print_entry());
+     b   ->add_entry(b   , print_entry());
+     c   ->add_entry(c   , print_entry());
 
-     root->add_exit(root, print_exit, NULL);
-     a->add_exit(a, print_exit, NULL);
-     b->add_exit(b, print_exit, NULL);
-     c->add_exit(c, print_exit, NULL);
+     root->add_exit(root, print_exit());
+     a   ->add_exit(a   , print_exit());
+     b   ->add_exit(b   , print_exit());
+     c   ->add_exit(c   , print_exit());
 
      root->trigger(root);
      assert(root->current(root) == a);
