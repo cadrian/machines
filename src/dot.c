@@ -57,6 +57,7 @@ static  __PRINTF__ void extend(machines_dot_impl_t *machine, char *format, ...) 
      vsnprintf(machine->buffer + machine->buffer_count, machine->buffer_capacity - machine->buffer_count, format, arg);
      machine->buffer_count += n;
      va_end(arg);
+
 }
 
 static void dot_observer_(machines_state_t *state, machines_dot_observer_t *payload) {
@@ -116,14 +117,16 @@ static machines_dot_t fn = {
      (machines_dot_generate_fn  ) dot_generate,
 };
 
+#define INITIAL_BUFFER_SIZE 4096
+
 __PUBLIC__ machines_dot_t *machines_new_dot(char *name) {
      machines_dot_impl_t *result = (machines_dot_impl_t*)malloc(sizeof(machines_dot_impl_t));
-     char *buffer = (char*)malloc(1024);
+     char *buffer = (char*)malloc(INITIAL_BUFFER_SIZE);
      result->fn = fn;
      result->name = name;
      result->buffer = buffer;
      result->buffer_count = 0;
-     result->buffer_capacity = 1024;
+     result->buffer_capacity = INITIAL_BUFFER_SIZE;
      result->transition_count = 0;
      return &(result->fn);
 }

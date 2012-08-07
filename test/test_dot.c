@@ -39,8 +39,8 @@ int main() {
      machines_state_t *a;
      machines_state_t *b;
      machines_state_t *c;
-     machines_dot_t *dot = machines_new_dot("test");
-     char dot_out[4096];
+     machines_dot_t *dot = machines_new_dot("test_dot");
+     char dot_out[1024];
 
      root = machines_new_state("root", NULL);
      a    = machines_new_state("a"   , root);
@@ -87,13 +87,13 @@ int main() {
      root->trigger(root);
      assert(root->current(root) == a);
 
-     dot->generate(dot, dot_out, 4096);
+     dot->generate(dot, dot_out, 1024);
      printf("--8<--------------------------------------------------------------------\n");
      printf(dot_out);
      printf("-------------------------------------------------------------------->8--\n");
 
      assert(!strcmp(dot_out,
-                    "digraph test {\n"
+                    "digraph test_dot {\n"
                     "\ta   [label=\"a\"];\n"
                     "\ta->b [label=\"(1)\"]\n"
                     "\tb   [label=\"b\"];\n"

@@ -15,6 +15,7 @@
 */
 
 #include "test.h"
+#include "machines_dot.h"
 
 /*
  * A simple game with one menu and two levels
@@ -30,6 +31,9 @@ int main() {
      machines_state_t *level_2_play;
      machines_state_t *level_2_quit;
 
+     machines_dot_t *dot = machines_new_dot("test_gameplay");
+     char *dot_out = (char*)malloc(16384);
+
      int condition_level_1 = 0;
      int condition_level_2 = 0;
      int condition_quit    = 0;
@@ -43,39 +47,39 @@ int main() {
      level_2_play = machines_new_state("play level 2", level_2);
      level_2_quit = machines_new_state("quit level 2", level_2);
 
-     root        ->add_entry(root        , print_entry());
-     level_1     ->add_entry(level_1     , print_entry());
-     level_2     ->add_entry(level_2     , print_entry());
-     menu        ->add_entry(menu        , print_entry());
-     level_1_play->add_entry(level_1_play, print_entry());
-     level_1_quit->add_entry(level_1_quit, print_entry());
-     level_2_play->add_entry(level_2_play, print_entry());
-     level_2_quit->add_entry(level_2_quit, print_entry());
+     root        ->add_entry(root        , dot->on_entry(dot, "root        "));
+     level_1     ->add_entry(level_1     , dot->on_entry(dot, "level_1     "));
+     level_2     ->add_entry(level_2     , dot->on_entry(dot, "level_2     "));
+     menu        ->add_entry(menu        , dot->on_entry(dot, "menu        "));
+     level_1_play->add_entry(level_1_play, dot->on_entry(dot, "level_1_play"));
+     level_1_quit->add_entry(level_1_quit, dot->on_entry(dot, "level_1_quit"));
+     level_2_play->add_entry(level_2_play, dot->on_entry(dot, "level_2_play"));
+     level_2_quit->add_entry(level_2_quit, dot->on_entry(dot, "level_2_quit"));
 
-     root        ->add_exit(root        , print_exit());
-     level_1     ->add_exit(level_1     , print_exit());
-     level_2     ->add_exit(level_2     , print_exit());
-     menu        ->add_exit(menu        , print_exit());
-     level_1_play->add_exit(level_1_play, print_exit());
-     level_1_quit->add_exit(level_1_quit, print_exit());
-     level_2_play->add_exit(level_2_play, print_exit());
-     level_2_quit->add_exit(level_2_quit, print_exit());
+     root        ->add_exit(root        , dot->on_exit(dot, "root        "));
+     level_1     ->add_exit(level_1     , dot->on_exit(dot, "level_1     "));
+     level_2     ->add_exit(level_2     , dot->on_exit(dot, "level_2     "));
+     menu        ->add_exit(menu        , dot->on_exit(dot, "menu        "));
+     level_1_play->add_exit(level_1_play, dot->on_exit(dot, "level_1_play"));
+     level_1_quit->add_exit(level_1_quit, dot->on_exit(dot, "level_1_quit"));
+     level_2_play->add_exit(level_2_play, dot->on_exit(dot, "level_2_play"));
+     level_2_quit->add_exit(level_2_quit, dot->on_exit(dot, "level_2_quit"));
 
      root->entry_at(root, menu);
-     menu->add_transition(menu, level_1, iff("menu->level_1", &condition_level_1));
-     menu->add_transition(menu, level_2, iff("menu->level_2", &condition_level_2));
-     level_1->add_transition(level_1, menu, always_true("level 1 finished, back to menu"));
-     level_2->add_transition(level_2, menu, always_true("level 2 finished, back to menu"));
+     menu->add_transition(menu, level_1, dot->transition(dot, "menu->level_1", iff("menu->level_1", &condition_level_1)));
+     menu->add_transition(menu, level_2, dot->transition(dot, "menu->level_2", iff("menu->level_2", &condition_level_2)));
+     level_1->add_transition(level_1, menu, dot->transition(dot, "level_1->menu", always_true("level 1 finished, back to menu")));
+     level_2->add_transition(level_2, menu, dot->transition(dot, "level_1->menu", always_true("level 2 finished, back to menu")));
 
      level_1->entry_at(level_1, level_1_play);
      level_1->exit_at(level_1, level_1_quit);
-     level_1_play->add_transition(level_1_play, level_1_quit, iff("play->quit", &condition_quit));
-     level_1_play->add_transition(level_1_play, level_1_play, always_true("continue playing level 1")); // note that transitions are checked in order until first match
+     level_1_play->add_transition(level_1_play, level_1_quit, dot->transition(dot, "level_1_play->level_1_quit", iff("play->quit", &condition_quit)));
+     level_1_play->add_transition(level_1_play, level_1_play, dot->transition(dot, "level_1_play->level_1_play", always_true("continue playing level 1"))); // note that transitions are checked in order until first match
 
      level_2->entry_at(level_2, level_2_play);
      level_2->exit_at(level_2, level_2_quit);
-     level_2_play->add_transition(level_2_play, level_2_quit, iff("play->quit", &condition_quit));
-     level_2_play->add_transition(level_2_play, level_2_play, always_true("continue playing level 2")); // note that transitions are checked in order until first match
+     level_2_play->add_transition(level_2_play, level_2_quit, dot->transition(dot, "level_2_play->level_2_quit", iff("play->quit", &condition_quit)));
+     level_2_play->add_transition(level_2_play, level_2_play, dot->transition(dot, "level_2_play->level_2_play", always_true("continue playing level 2"))); // note that transitions are checked in order until first match
 
      // application startup
      printf("**** trigger: go to menu\n");
@@ -147,6 +151,11 @@ int main() {
      printf("**** trigger: back to the menu\n");
      root->trigger(root);
      assert(root->current(root) == menu);
+
+     dot->generate(dot, dot_out, 16384);
+     printf("--8<--------------------------------------------------------------------\n");
+     printf(dot_out);
+     printf("-------------------------------------------------------------------->8--\n");
 
      return 0;
 }
