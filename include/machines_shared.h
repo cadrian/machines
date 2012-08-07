@@ -22,9 +22,6 @@
  * A shared header for all Machines subsystems.
  */
 
-#include <stdlib.h>
-
-#define __PUBLIC__ __attribute__((__visibility__("default")))
-#define __PRINTF__ __attribute__((format(printf, 2, 3)))
+#include <cad_shared.h>
 
 #endif /* _MACHINES_SHARED_H_ */

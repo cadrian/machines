@@ -31,21 +31,21 @@ int main() {
      machines_state_t *level_2_play;
      machines_state_t *level_2_quit;
 
-     machines_dot_t *dot = machines_new_dot("test_gameplay");
+     machines_dot_t *dot = machines_new_dot("test_gameplay", stdlib_memory);
      char *dot_out = (char*)malloc(16384);
 
      int condition_level_1 = 0;
      int condition_level_2 = 0;
      int condition_quit    = 0;
 
-     root         = machines_new_state("root", NULL);
-     level_1      = machines_new_state("level 1", root);
-     level_2      = machines_new_state("level 2", root);
-     menu         = machines_new_state("menu", root);
-     level_1_play = machines_new_state("play level 1", level_1);
-     level_1_quit = machines_new_state("quit level 1", level_1);
-     level_2_play = machines_new_state("play level 2", level_2);
-     level_2_quit = machines_new_state("quit level 2", level_2);
+     root         = machines_new_state("root", NULL, stdlib_memory);
+     level_1      = machines_new_state("level 1", root, stdlib_memory);
+     level_2      = machines_new_state("level 2", root, stdlib_memory);
+     menu         = machines_new_state("menu", root, stdlib_memory);
+     level_1_play = machines_new_state("play level 1", level_1, stdlib_memory);
+     level_1_quit = machines_new_state("quit level 1", level_1, stdlib_memory);
+     level_2_play = machines_new_state("play level 2", level_2, stdlib_memory);
+     level_2_quit = machines_new_state("quit level 2", level_2, stdlib_memory);
 
      root        ->add_entry(root        , dot->on_entry(dot, "root        "));
      level_1     ->add_entry(level_1     , dot->on_entry(dot, "level_1     "));

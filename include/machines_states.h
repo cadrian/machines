@@ -39,6 +39,7 @@ typedef struct {
      void *payload;
 } machines_state_transition_t;
 
+typedef void (*machines_state_free_fn)(machines_state_t *this);
 typedef machines_state_t*(*machines_state_current_fn)(machines_state_t *this);
 typedef void*(*machines_state_payload_fn)(machines_state_t *this);
 typedef void (*machines_state_add_entry_fn)(machines_state_t *this, machines_state_observer_t on_entry);
@@ -49,6 +50,7 @@ typedef void (*machines_state_exit_at_fn)(machines_state_t *this, machines_state
 typedef void (*machines_state_trigger_fn)(machines_state_t *this);
 
 struct machines_state {
+     machines_state_free_fn           free          ;
      machines_state_current_fn        current       ;
      machines_state_payload_fn        payload       ;
      machines_state_add_entry_fn      add_entry     ;
@@ -59,7 +61,7 @@ struct machines_state {
      machines_state_trigger_fn        trigger       ;
 };
 
-__PUBLIC__ machines_state_t *machines_new_state(void *payload, machines_state_t *parent);
+__PUBLIC__ machines_state_t *machines_new_state(void *payload, machines_state_t *parent, cad_memory_t memory);
 
 __PUBLIC__ machines_state_observer_t machines_observer(machines_state_observer_fn fn, void *payload);
 __PUBLIC__ machines_state_transition_t machines_transition(machines_state_transition_fn fn, void *payload);

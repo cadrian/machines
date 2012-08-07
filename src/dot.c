@@ -17,12 +17,15 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdarg.h>
+#include <string.h>
 
 #include "machines_dot.h"
 
 typedef struct machines_dot_impl {
      machines_dot_t fn;
      char *name;
+
+     cad_memory_t memory;
 
      char *buffer;
      int buffer_count; //< `buffer_count == strlen(buffer)`
@@ -40,6 +43,7 @@ typedef struct machines_dot_observer {
 static  __PRINTF__ void extend(machines_dot_impl_t *machine, char *format, ...) {
      va_list arg;
      int n, c = machine->buffer_capacity;
+     char *new_buffer;
 
      va_start(arg, format);
      n = vsnprintf("", 0, format, arg);
@@ -49,7 +53,10 @@ static  __PRINTF__ void extend(machines_dot_impl_t *machine, char *format, ...) 
           do {
                c *= 2;
           } while (c - machine->buffer_count < n);
-          machine->buffer = (char*)realloc(machine->buffer, c);
+          new_buffer = (char*)machine->memory.malloc(c);
+          memcpy(new_buffer, machine->buffer, machine->buffer_count);
+          machine->memory.free(machine->buffer);
+          machine->buffer = new_buffer;
           machine->buffer_capacity = c;
      }
 
@@ -72,7 +79,7 @@ static void dot_nop_(machines_state_t *state, machines_dot_observer_t *payload) 
 }
 
 static machines_state_observer_t dot_entry(machines_dot_impl_t *this, char *label) {
-     machines_dot_observer_t *payload = (machines_dot_observer_t*)malloc(sizeof(machines_dot_observer_t));
+     machines_dot_observer_t *payload = (machines_dot_observer_t*)this->memory.malloc(sizeof(machines_dot_observer_t));
      payload->machine = this;
      payload->label = label;
      payload->set = 0;
@@ -99,7 +106,7 @@ static int dot_transition_(machines_state_t *from_state, machines_state_t *to_st
 }
 
 machines_state_transition_t dot_transition(machines_dot_impl_t *this, char *label, machines_state_transition_t transition) {
-     machines_dot_transition_t *payload = (machines_dot_transition_t*)malloc(sizeof(machines_dot_transition_t));
+     machines_dot_transition_t *payload = (machines_dot_transition_t*)this->memory.malloc(sizeof(machines_dot_transition_t));
      payload->machine = this;
      payload->label = label;
      payload->transition = transition;
@@ -110,7 +117,12 @@ int dot_generate(machines_dot_impl_t *this, char *buffer, int buffer_size) {
      return snprintf(buffer, buffer_size, "digraph %s {\n%*s}\n", this->name, this->buffer_count, this->buffer);
 }
 
+static void dot_free(machines_dot_impl_t *this) {
+     // TODO
+}
+
 static machines_dot_t fn = {
+     (machines_dot_free_fn      ) dot_free,
      (machines_dot_on_entry_fn  ) dot_entry,
      (machines_dot_on_exit_fn   ) dot_exit,
      (machines_dot_transition_fn) dot_transition,
@@ -119,10 +131,11 @@ static machines_dot_t fn = {
 
 #define INITIAL_BUFFER_SIZE 4096
 
-__PUBLIC__ machines_dot_t *machines_new_dot(char *name) {
-     machines_dot_impl_t *result = (machines_dot_impl_t*)malloc(sizeof(machines_dot_impl_t));
-     char *buffer = (char*)malloc(INITIAL_BUFFER_SIZE);
+__PUBLIC__ machines_dot_t *machines_new_dot(char *name, cad_memory_t memory) {
+     machines_dot_impl_t *result = (machines_dot_impl_t*)memory.malloc(sizeof(machines_dot_impl_t));
+     char *buffer = (char*)memory.malloc(INITIAL_BUFFER_SIZE);
      result->fn = fn;
+     result->memory = memory;
      result->name = name;
      result->buffer = buffer;
      result->buffer_count = 0;

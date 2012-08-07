@@ -33,6 +33,8 @@ struct machines_state_impl {
      machines_state_t fn;
      void *payload;
 
+     cad_memory_t memory;
+
      machines_state_impl_t *parent ;
      machines_state_impl_t *entry  ;
      machines_state_impl_t *exit   ;
@@ -86,23 +88,23 @@ static machines_chain_t *add_chain(machines_chain_t *chain, machines_chain_t *ne
      return result;
 }
 
-static machines_state_chain_observer_t *add_observer(machines_state_chain_observer_t *observer, machines_state_observer_t agent) {
-     machines_state_chain_observer_t *new = (machines_state_chain_observer_t*)malloc(sizeof(machines_state_chain_observer_t));
+static machines_state_chain_observer_t *add_observer(cad_memory_t memory, machines_state_chain_observer_t *observer, machines_state_observer_t agent) {
+     machines_state_chain_observer_t *new = (machines_state_chain_observer_t*)memory.malloc(sizeof(machines_state_chain_observer_t));
      new->agent = agent;
      return (machines_state_chain_observer_t*)add_chain(&(observer->chain), &(new->chain));
 }
 
 static void add_entry(machines_state_impl_t *this, machines_state_observer_t entry) {
-     this->on_entry = add_observer(this->on_entry, entry);
+     this->on_entry = add_observer(this->memory, this->on_entry, entry);
 }
 
 static void add_exit(machines_state_impl_t *this, machines_state_observer_t exit) {
-     this->on_exit = add_observer(this->on_exit, exit);
+     this->on_exit = add_observer(this->memory, this->on_exit, exit);
 }
 
 static void add_transition(machines_state_impl_t *this, machines_state_t *target, machines_state_transition_t agent) {
      machines_state_chain_transition_t *new;
-     new = (machines_state_chain_transition_t*)malloc(sizeof(machines_state_chain_transition_t));
+     new = (machines_state_chain_transition_t*)this->memory.malloc(sizeof(machines_state_chain_transition_t));
      new->agent = agent;
      new->target = (machines_state_impl_t*)target;
      this->transition = (machines_state_chain_transition_t*)add_chain((machines_chain_t*)this->transition, (machines_chain_t*)new);
@@ -163,7 +165,12 @@ static void trigger(machines_state_impl_t *this) {
      }
 }
 
+static void free_(machines_state_impl_t *this) {
+     // TODO
+}
+
 static machines_state_t fn = {
+     (machines_state_free_fn          )free_         ,
      (machines_state_current_fn       )current       ,
      (machines_state_payload_fn       )payload       ,
      (machines_state_add_entry_fn     )add_entry     ,
@@ -174,10 +181,11 @@ static machines_state_t fn = {
      (machines_state_trigger_fn       )trigger       ,
 };
 
-__PUBLIC__ machines_state_t *machines_new_state(void *payload, machines_state_t *parent) {
-     machines_state_impl_t *result = (machines_state_impl_t*)malloc(sizeof(machines_state_impl_t));
+__PUBLIC__ machines_state_t *machines_new_state(void *payload, machines_state_t *parent, cad_memory_t memory) {
+     machines_state_impl_t *result = (machines_state_impl_t*)memory.malloc(sizeof(machines_state_impl_t));
      machines_state_impl_t *parent_impl = (machines_state_impl_t*)parent;
      result->fn = fn;
+     result->memory = memory;
      result->payload = payload;
      result->parent = (machines_state_impl_t*)parent;
      result->current = NULL;

@@ -42,10 +42,10 @@ int main() {
      machines_state_t *c;
      int counter = 1;
 
-     root = machines_new_state("root", NULL);
-     a    = machines_new_state("a"   , root);
-     b    = machines_new_state("b"   , root);
-     c    = machines_new_state("c"   , root);
+     root = machines_new_state("root", NULL, stdlib_memory);
+     a    = machines_new_state("a"   , root, stdlib_memory);
+     b    = machines_new_state("b"   , root, stdlib_memory);
+     c    = machines_new_state("c"   , root, stdlib_memory);
 
      root->entry_at(root, a);
      root->exit_at(root, c);

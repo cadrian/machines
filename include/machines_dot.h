@@ -26,18 +26,20 @@
 
 typedef struct machines_dot machines_dot_t;
 
+typedef void (*machines_dot_free_fn)(machines_dot_t *this);
 typedef machines_state_observer_t (*machines_dot_on_entry_fn)(machines_dot_t *this, char *label);
 typedef machines_state_observer_t (*machines_dot_on_exit_fn)(machines_dot_t *this, char *label);
 typedef machines_state_transition_t (*machines_dot_transition_fn)(machines_dot_t *this, char *label, machines_state_transition_t transition);
 typedef int (*machines_dot_generate_fn)(machines_dot_t *this, char *buffer, int buffer_size);
 
 struct machines_dot {
+     machines_dot_free_fn       free;
      machines_dot_on_entry_fn   on_entry;
      machines_dot_on_exit_fn    on_exit;
      machines_dot_transition_fn transition;
      machines_dot_generate_fn   generate;
 };
 
-__PUBLIC__ machines_dot_t *machines_new_dot(char *name);
+__PUBLIC__ machines_dot_t *machines_new_dot(char *name, cad_memory_t memory);
 
 #endif /* _MACHINES_DOTS_H_ */
