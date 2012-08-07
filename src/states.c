@@ -26,6 +26,13 @@ struct machines_chain {
      machines_chain_t *next;
 };
 
+static void free_chain(machines_chain_t *chain, cad_memory_t memory) {
+     if (chain) {
+          free_chain(chain->next, memory);
+          memory.free(chain);
+     }
+}
+
 typedef struct machines_state_chain_observer machines_state_chain_observer_t;
 typedef struct machines_state_chain_transition machines_state_chain_transition_t;
 
@@ -166,7 +173,10 @@ static void trigger(machines_state_impl_t *this) {
 }
 
 static void free_(machines_state_impl_t *this) {
-     // TODO
+     free_chain((machines_chain_t*)this->on_entry  , this->memory);
+     free_chain((machines_chain_t*)this->on_exit   , this->memory);
+     free_chain((machines_chain_t*)this->transition, this->memory);
+     this->memory.free(this);
 }
 
 static machines_state_t fn = {
