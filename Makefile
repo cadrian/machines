@@ -13,14 +13,14 @@ install: run-test doc
 	echo
 	if [ -d $(DESTDIR) ]; then find $(DESTDIR) -name libmachines -exec echo {} : \; -exec ls {} \; ; fi
 	echo "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
-	mkdir -p $(DESTDIR)/usr/lib/libmachines
-	mkdir -p $(DESTDIR)/usr/include/libmachines
+	mkdir -p $(DESTDIR)/usr/lib
+	mkdir -p $(DESTDIR)/usr/include
 	mkdir -p $(DESTDIR)/usr/share/doc/libmachines
-	cp target/libmachines.so $(DESTDIR)/usr/lib/libmachines/libmachines.so.1
-	ln -sf libmachines.so.1 $(DESTDIR)/usr/lib/libmachines/libmachines.so
-	cp target/libmachines.a $(DESTDIR)/usr/lib/libmachines/libmachines.a.1
-	ln -sf libmachines.a.1 $(DESTDIR)/usr/lib/libmachines/libmachines.a
-	cp include/*.h $(DESTDIR)/usr/include/libmachines/
+	cp target/libmachines.so $(DESTDIR)/usr/lib/libmachines.so.1
+	ln -sf libmachines.so.1 $(DESTDIR)/usr/lib/libmachines.so
+	cp target/libmachines.a $(DESTDIR)/usr/lib/libmachines.a.1
+	ln -sf libmachines.a.1 $(DESTDIR)/usr/lib/libmachines.a
+	cp include/*.h $(DESTDIR)/usr/include/
 	cp -a target/*.pdf target/doc/html $(DESTDIR)/usr/share/doc/libmachines/
 
 release: debuild
@@ -65,7 +65,7 @@ target/test: $(shell find test/data -type f)
 
 target/libmachines.so: target $(OBJ)
 	echo "Linking shared library: $@"
-	$(CC) -shared -o $@ -lm $(OBJ)
+	$(CC) -shared -o $@ -lm -lcad $(OBJ)
 	echo
 
 target/libmachines.a: target $(OBJ)
@@ -112,7 +112,7 @@ target/out/%.o: src/%.c include/*.h
 
 target/out/%.exe: test/%.c test/*.h target/libmachines.so
 	echo "Compiling test: $<"
-	$(CC) $(CFLAGS) -I include -L target -lmachines $< -o $@
+	$(CC) $(CFLAGS) -I include -L target -lmachines -lcad $< -o $@
 
 .PHONY: all lib doc clean run-test release debuild
 .SILENT:
